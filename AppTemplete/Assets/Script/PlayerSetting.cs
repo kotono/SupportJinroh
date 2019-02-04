@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,13 +8,13 @@ public class PlayerSetting : MonoBehaviour {
 	public enum card {
 		CARD_JINROH		,	// 人狼
 		CARD_MADMAN		,	// 狂人
-		CARD_SUMURA		,	// 村人
 		CARD_URANAI		,	// 占い師
 		CARD_GUARD		,	// ボディーガード
 		CARD_HUNTER		,	// ハンター
 		CARD_SHARER		,	// 共有者
 		CARD_PSYCHIC	,	// 霊能者
 		CARD_DETECTIVE	,	// 刑事
+		CARD_SUMURA		,	// 村人
 
 		CARD_MAX
 	};
@@ -22,28 +22,30 @@ public class PlayerSetting : MonoBehaviour {
 	List<string> cardName = new List<string>() {
 		"jinroh"	,
 		"madman"	,
-		"sumura"	,
 		"uranai"	,
 		"guard"		,
 		"hunter"	,
 		"sharer"	,
 		"psychic"	,
 		"detective"	,
+		"sumura"	,
 	};
+
+	List<Sprite> cardImage = new List<Sprite>();
 
 	Dictionary<string, string> yakushoku = new Dictionary<string, string>() {
 		{	"jinroh"	,	"人狼"				},
 		{	"madman"	,	"狂人"				},
-		{	"sumura"	,	"村人"				},
 		{	"uranai"	,	"占い師"			},
 		{	"guard"		,	"ボディーガード"	},
 		{	"hunter"	,	"ハンター"			},
 		{	"sharer"	,	"共有者"			},
 		{	"psychic"	,	"霊能者"			},
 		{	"detective"	,	"刑事"				},
+		{	"sumura"	,	"村人"				},
 	};
 
-	List<card> cardListTmp = new List<card>() {
+	List<card> cardList = new List<card>() {
 		card.CARD_JINROH	,	// 人狼
 		card.CARD_SUMURA	,	// 村人
 		card.CARD_SUMURA	,	// 村人
@@ -62,6 +64,8 @@ public class PlayerSetting : MonoBehaviour {
 		card.CARD_SUMURA	,	// 村人
 		card.CARD_JINROH	,	// 人狼
 	};
+
+	List<card> cardListTmp = new List<card>();
 
 	// ミニカードの親
 	public GameObject cardParent = null;
@@ -84,6 +88,13 @@ public class PlayerSetting : MonoBehaviour {
 		GameObject obj;
 		Image img;
 		Text name;
+		Sprite cardImg;
+
+		// カード画像読み込み
+		for (int i = 0; i < (int)card.CARD_MAX; i++) {
+			cardImg = Resources.Load<Sprite>("Card/" + cardName[i]);
+			cardImage.Add(cardImg);
+		}
 
 		// ミニカード複製
 		for (int i = 0; i < MainScene.PLAYER_MAX; i++) {
@@ -96,8 +107,9 @@ public class PlayerSetting : MonoBehaviour {
 			}
 			cardObjList.Add(obj);
 			img = obj.GetComponent<Image>();
-			int no = (int)cardListTmp[i];
-			img.sprite = Resources.Load<Sprite>("Card/" + cardName[no]);
+			int no = (int)cardList[i];
+		//	img.sprite = Resources.Load<Sprite>("Card/" + cardName[no]);
+			img.sprite = cardImage[no];
 			img.enabled = (img.sprite != null);		// 読み込めなかったら、desable にしておく
 			name = obj.GetComponentInChildren<Text>();
 			name.text = yakushoku[cardName[no]];
@@ -115,6 +127,9 @@ public class PlayerSetting : MonoBehaviour {
 				cardObjList[i].SetActive(i < MainScene.playerNum);
 			}
 		}
+
+		// 役職変更処理
+		regulationHandling();
 	}
 
 	// ＋－ボタンの制御
@@ -129,9 +144,6 @@ public class PlayerSetting : MonoBehaviour {
 
 		// 値更新
 		MainScene.playerNum = num;
-
-		// 
-
 	}
 	public void onClickButtonMinus()
 	{
@@ -148,8 +160,10 @@ public class PlayerSetting : MonoBehaviour {
 
 	public void onClickButtonDecide()
 	{
-		for (int i = 1; i < cardObjList.Count; i++) {
-			MainScene.cardList.Add(cardListTmp[i]);
+		// カードリスト格納
+		MainScene.cardList.Clear();
+		for (int i = 1; i < MainScene.playerNum; i++) {
+			MainScene.cardList.Add(cardList[i]);
 		}
 		// ソート
 		MainScene.cardList.Sort();
@@ -157,4 +171,30 @@ public class PlayerSetting : MonoBehaviour {
 		// シーン移動
 		SceneNavigator.Instance.Change ("IntroductionScene");
 	}
+	
+	private void regulationHandling()
+	{
+		// ３人レギュの時は、ボディーガードにする
+		cardList[2] = (MainScene.playerNum == 3)? card.CARD_GUARD : card.CARD_SUMURA;
+
+		// ソート
+		cardListTmp.Clear();
+		for (int no = 0; no < MainScene.playerNum; no++) {
+			cardListTmp.Add(cardList[no]);
+		}
+		cardListTmp.Sort();
+
+		// 画像設定
+		for (int i = 0; i < MainScene.playerNum; i++) {
+			GameObject obj = cardObjList[i];
+			Image img = obj.GetComponent<Image>();
+			Text name = obj.GetComponentInChildren<Text>();
+			int no = (int)cardListTmp[i];
+			img.sprite = cardImage[no];
+			img.enabled = (img.sprite != null);		// 読み込めなかったら、desable にしておく
+			name.text = yakushoku[cardName[no]];
+		}
+
+	}
+
 }
